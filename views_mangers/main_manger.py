@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QLineEdit, QMessageBox, QFileDialog, QApplication
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import *
 import os
+from views_mangers.progressBar import WaitingScreen
 
 import pandas as pd
 import json
@@ -19,6 +20,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 class ApiWorkerSignals(QtCore.QObject):
     current_user = QtCore.pyqtSignal(str)
     msg_exec = QtCore.pyqtSignal(str, str)
+    finished = QtCore.pyqtSignal()
 
 
 class ApiWorker(QtCore.QRunnable):
@@ -29,7 +31,7 @@ class ApiWorker(QtCore.QRunnable):
         self.exp_path = exp_path
         self.users_data_list = []
         self.params = {"username": "SCIHL_SA", "tweet.fields": "public_metrics,referenced_tweets",
-                       "start_time": "2023-01-01T00:00:00Z", "end_time": "2023-12-31T24:00:00Z", "max_results": "100"}
+                       "start_time": "2023-01-01T00:00:00Z", "end_time": "2023-12-31T12:00:00Z", "max_results": "100"}
         self.headers = {"Authorization": "Token b6d39cc1c56cf18b1a96c2128f0c50c54aa2b0d5e32806f3bd518ac143dfca74"}
         self.signals = ApiWorkerSignals()
 
@@ -45,8 +47,12 @@ class ApiWorker(QtCore.QRunnable):
             return False
 
         self.automate_running(users_list)
+        self.csv_writer(self.users_data_list, self.exp_path)
+        self.signals.msg_exec.emit("Success", "Successfully Done")
+        self.signals.finished.emit()
 
     def automate_running(self, users_list):
+        count = 1
         try:
             for user_name in users_list:
                 response = self.handle_user_data_jsonRequest(user_name)
@@ -55,18 +61,18 @@ class ApiWorker(QtCore.QRunnable):
                     print(userJsonData)
                     self.signals.msg_exec.emit("Error",
                                                f"Error in {user_name} : {userJsonData.get('errors').get('errors')}")
-                    break
-                    # return False
+                    return False
                 user_data = self.get_user_data(userJsonData)
                 if not user_data:
-                    break
+                    return False
                     # return False
                 self.users_data_list.append(user_data)
                 self.signals.current_user.emit(f"{user_name} is done")
-            self.csv_writer(self.users_data_list, self.exp_path)
-            self.signals.msg_exec.emit("Success", "Successfully Done")
+                count += 1
 
-            return True
+            if count == len(users_list):
+                return True
+            return False
         except Exception as e:
             print(e)
             self.signals.msg_exec.emit("Error", f"Error in {user_name} : {e}")
@@ -109,16 +115,17 @@ class ApiWorker(QtCore.QRunnable):
     def csv_writer(self, userslists, file_path):
         # Open the CSV file in append mode ('a' or 'ab' for binary mode)
         count = 1
-        file_path_to_save = os.path.join(file_path, "users_data.csv")
+        file_name = self.src_path.split("/")[-1].split(".")[0]
+        file_path_to_save = os.path.join(file_path, f"{file_name}.csv")
         if os.path.exists(file_path_to_save):
-            file_path_to_save = os.path.join(file_path, "users_data" + str(count) + ".csv")
+            file_path_to_save = os.path.join(file_path, f"{file_name}" + str(count) + ".csv")
 
         while os.path.exists(file_path_to_save):
-            file_path_to_save = os.path.join(file_path, "users_data" + str(count) + ".csv")
+            file_path_to_save = os.path.join(file_path, f"{file_name}" + str(count) + ".csv")
             count += 1
 
         try:
-            with open(file_path_to_save, 'a', newline='') as csvfile:
+            with open(file_path_to_save, 'a', newline='',  encoding='utf-8') as csvfile:
                 # Specify the field names
                 fieldnames = ['name', 'username', 'total_posts', "total_engagement"]
 
@@ -131,6 +138,7 @@ class ApiWorker(QtCore.QRunnable):
 
                 # Write the new row to the CSV file
                 for user_data_row in userslists:
+                    print(user_data_row)
                     csv_writer.writerow(user_data_row)
                     print("Row added successfully.")
             print("successfully in csv")
@@ -158,18 +166,42 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
         self.exp_path = None
 
         self.msg = QtWidgets.QMessageBox()
-        self.msg.setStyleSheet("min-width: 20cm; ")
+        # self.msg.setStyleSheet("min-width: 50cm; ")
 
         self.tableWidget.setRowCount(0)
         table_headers = ['Name', 'Username', 'Status']
         self.tableWidget.setHorizontalHeaderLabels(table_headers)
 
+        self.loading = None
+
     def run(self):
         worker = ApiWorker(self.base_url, self.src_file_path, self.exp_path)
         worker.setAutoDelete(True)
+        self.loading = WaitingScreen()
+
+        self.start_btn.setText("Running...")
+        self.start_btn.setDisabled(True)
+        self.start_btn.setStyleSheet("""color: rgb(255, 255, 255);
+                                        background-color: rgb(255, 0, 0);;
+                                        font: 22pt ".AppleSystemUIFont";
+                                         border-radius: 9px;
+                                        """)
+        self.loading.show()
+
         worker.signals.current_user.connect(self.update_current_user_lbl)
         worker.signals.msg_exec.connect(self.msg_box)
+        worker.signals.finished.connect(self.finished)
         self.threadpool.start(worker)
+
+    def finished(self):
+        self.loading.close()
+        self.start_btn.setStyleSheet("""color: rgb(255, 255, 255);
+                                        background-color: rgb(20,  190, 120);
+                                        font: 22pt ".AppleSystemUIFont";
+                                         border-radius: 9px;
+                                        """)
+        self.start_btn.setText("Start")
+        self.start_btn.setDisabled(False)
 
     def msg_box(self, title, text):
         self.msg.setWindowTitle(title)
