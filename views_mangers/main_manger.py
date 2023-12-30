@@ -47,25 +47,30 @@ class ApiWorker(QtCore.QRunnable):
         self.automate_running(users_list)
 
     def automate_running(self, users_list):
-        for user_name in users_list:
-            response = self.handle_user_data_jsonRequest(user_name)
-            userJsonData, _ = self.check_response_status(response)
-            if not _:
-                print(userJsonData)
-                self.signals.msg_exec.emit("Error",
-                                           f"Error in {user_name} : {userJsonData.get('errors').get('errors')}")
-                break
-                # return False
-            user_data = self.get_user_data(userJsonData)
-            if not user_data:
-                break
-                # return False
-            self.users_data_list.append(user_data)
-            self.signals.current_user.emit(f"{user_name} is done")
-        self.csv_writer(self.users_data_list, self.exp_path)
-        self.signals.msg_exec.emit("Success", "Successfully Done")
+        try:
+            for user_name in users_list:
+                response = self.handle_user_data_jsonRequest(user_name)
+                userJsonData, _ = self.check_response_status(response)
+                if not _:
+                    print(userJsonData)
+                    self.signals.msg_exec.emit("Error",
+                                               f"Error in {user_name} : {userJsonData.get('errors').get('errors')}")
+                    break
+                    # return False
+                user_data = self.get_user_data(userJsonData)
+                if not user_data:
+                    break
+                    # return False
+                self.users_data_list.append(user_data)
+                self.signals.current_user.emit(f"{user_name} is done")
+            self.csv_writer(self.users_data_list, self.exp_path)
+            self.signals.msg_exec.emit("Success", "Successfully Done")
 
-        return True
+            return True
+        except Exception as e:
+            print(e)
+            self.signals.msg_exec.emit("Error", f"Error in {user_name} : {e}")
+            return False
 
     def handle_df(self):
         src_file_path = self.src_path
@@ -174,7 +179,6 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
 
     def update_current_user_lbl(self, username):
         self.current_user_lbl.setText(username)
-
 
     def select_src_path(self, event):
         self.src_file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Single File', '',

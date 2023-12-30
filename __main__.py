@@ -33,7 +33,6 @@ class User_Analyser(QtWidgets.QStackedWidget):
         # main screen
         # self.main_manager.dwnlod_playlist_btn.clicked.connect(lambda: self.setCurrentIndex(1))
 
-
     def check_internet_connection(self):
         manager = QNetworkAccessManager(self)
         request = QNetworkRequest(QUrl("http://www.google.com"))
@@ -63,6 +62,7 @@ class User_Analyser(QtWidgets.QStackedWidget):
 
 if __name__ == "__main__":
     import qdarkstyle
+
     app = QtWidgets.QApplication([])
     w = User_Analyser()
     w.show()
