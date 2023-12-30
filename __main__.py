@@ -2,6 +2,11 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QMessageBox
 from views_mangers.main_manger import MainManager
 
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QMessageBox
+from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+
 
 class User_Analyser(QtWidgets.QStackedWidget):
     def __init__(self):
@@ -15,6 +20,9 @@ class User_Analyser(QtWidgets.QStackedWidget):
         self.setWindowTitle(_translate("Form", "User Analyzer "))
 
         self.main_manager = MainManager()
+
+        self.check_internet_connection()
+
 
         # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 
@@ -42,6 +50,32 @@ class User_Analyser(QtWidgets.QStackedWidget):
     #     except Exception as e:
     #         print(e)
 
+
+    def check_internet_connection(self):
+        manager = QNetworkAccessManager(self)
+        request = QNetworkRequest(QUrl("http://www.google.com"))
+
+        def handle_reply(reply):
+            if not reply.error() == QNetworkReply.NoError:
+                self.show_no_internet_message()
+
+        manager.finished.connect(handle_reply)
+        manager.get(request)
+
+    def show_no_internet_message(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText("No internet connection.")
+        msg.setWindowTitle("Connection Error")
+        msg.setStandardButtons(QMessageBox.Retry | QMessageBox.Close)
+        msg.buttonClicked.connect(self.handle_message_box_button)
+        msg.exec_()
+
+    def handle_message_box_button(self, button):
+        if button.text() == "Retry":
+            self.check_internet_connection()
+        elif button.text() == "Close":
+            self.close()
 
 if __name__ == "__main__":
     # import qdarkstyle
