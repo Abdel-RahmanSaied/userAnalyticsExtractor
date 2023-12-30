@@ -33,21 +33,6 @@ class User_Analyser(QtWidgets.QStackedWidget):
         # main screen
         # self.main_manager.dwnlod_playlist_btn.clicked.connect(lambda: self.setCurrentIndex(1))
 
-    # def about_me(self):
-    #     try:
-    #         msg = QtWidgets.QMessageBox()
-    #         icon = QtGui.QIcon()
-    #         icon.addPixmap(QtGui.QPixmap(":/icons/images/logo.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-    #         msg.setWindowIcon(icon)
-    #         msg.setStyleSheet('''font: 12pt "Acumin Pro";''')
-    #
-    #         msg.setWindowTitle(" About Us ")
-    #         msg.setText(" Developed by : Abdel-Rahman Saied \n  Email : abdelrahmansaied080@gmail.com")
-    #         msg.setIcon(QMessageBox.Information)
-    #         msg.setStyleSheet('''font: 12pt "Acumin Pro";''')
-    #         msg.exec_()
-    #     except Exception as e:
-    #         print(e)
 
     def check_internet_connection(self):
         manager = QNetworkAccessManager(self)

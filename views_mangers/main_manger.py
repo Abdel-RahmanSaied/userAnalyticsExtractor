@@ -29,7 +29,7 @@ class ApiWorker(QtCore.QRunnable):
         self.exp_path = exp_path
         self.users_data_list = []
         self.params = {"username": "SCIHL_SA", "tweet.fields": "public_metrics,referenced_tweets",
-                       "start_time": "2023-01-01T00:00:00Z", "end_time": "2023-12-28T00:00:00Z", "max_results": "100"}
+                       "start_time": "2023-01-01T00:00:00Z", "end_time": "2023-12-31T24:00:00Z", "max_results": "100"}
         self.headers = {"Authorization": "Token b6d39cc1c56cf18b1a96c2128f0c50c54aa2b0d5e32806f3bd518ac143dfca74"}
         self.signals = ApiWorkerSignals()
 
