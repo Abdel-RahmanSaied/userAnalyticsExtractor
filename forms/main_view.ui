@@ -498,8 +498,11 @@ color: rgb(255, 0, 0);</string>
           <height>650</height>
          </size>
         </property>
+        <property name="styleSheet">
+         <string notr="true">font: 75 16pt &quot;MS Shell Dlg 2&quot;;</string>
+        </property>
         <property name="text">
-         <string>Working on {{ USER NAME }} ......</string>
+         <string/>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
