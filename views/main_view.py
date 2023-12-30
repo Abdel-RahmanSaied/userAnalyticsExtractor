@@ -140,6 +140,8 @@ class Ui_Form(object):
         self.gridLayout_7.setObjectName("gridLayout_7")
         self.current_user_lbl = QtWidgets.QLabel(self.groupBox_4)
         self.current_user_lbl.setMaximumSize(QtCore.QSize(901, 650))
+        self.current_user_lbl.setStyleSheet("font: 75 16pt \"MS Shell Dlg 2\";")
+        self.current_user_lbl.setText("")
         self.current_user_lbl.setAlignment(QtCore.Qt.AlignCenter)
         self.current_user_lbl.setObjectName("current_user_lbl")
         self.gridLayout_7.addWidget(self.current_user_lbl, 0, 0, 1, 1)
@@ -179,6 +181,5 @@ class Ui_Form(object):
         self.label.setText(_translate("Form", "Select source excel file that contain the users"))
         self.selectSrcPath_btn.setText(_translate("Form", "Select"))
         self.src_path_lbl.setText(_translate("Form", "source file path .........."))
-        self.current_user_lbl.setText(_translate("Form", "Working on {{ USER NAME }} ......"))
         self.start_btn.setText(_translate("Form", "Start"))
 import app_resources_rc
