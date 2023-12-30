@@ -46,9 +46,15 @@ class ApiWorker(QtCore.QRunnable):
             self.signals.msg_exec.emit("Error", "No users found")
             return False
 
-        self.automate_running(users_list)
+        running_state = self.automate_running(users_list)
+        if not running_state:
+            self.signals.msg_exec.emit("Success", "Not All users has been finished yet \n Please edit the original "
+                                                  "file to keep the users not finished yet \n and run again after 15 "
+                                                  "minutes")
+        else :
+            self.signals.msg_exec.emit("Success", "Successfully Done")
+
         self.csv_writer(self.users_data_list, self.exp_path)
-        self.signals.msg_exec.emit("Success", "Successfully Done")
         self.signals.finished.emit()
 
     def automate_running(self, users_list):
