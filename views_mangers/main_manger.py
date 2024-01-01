@@ -51,14 +51,14 @@ class ApiWorker(QtCore.QRunnable):
             self.signals.msg_exec.emit("Success", "Not All users has been finished yet \n Please edit the original "
                                                   "file to keep the users not finished yet \n and run again after 15 "
                                                   "minutes")
-        else :
+        else:
             self.signals.msg_exec.emit("Success", "Successfully Done")
 
         self.csv_writer(self.users_data_list, self.exp_path)
         self.signals.finished.emit()
 
     def automate_running(self, users_list):
-        count = 1
+        count = 0
         try:
             for user_name in users_list:
                 response = self.handle_user_data_jsonRequest(user_name)
@@ -76,6 +76,8 @@ class ApiWorker(QtCore.QRunnable):
                 self.signals.current_user.emit(f"{user_name} is done")
                 count += 1
 
+            print(count)
+            print(len(users_list))
             if count == len(users_list):
                 return True
             return False
@@ -131,7 +133,7 @@ class ApiWorker(QtCore.QRunnable):
             count += 1
 
         try:
-            with open(file_path_to_save, 'a', newline='',  encoding='utf-8') as csvfile:
+            with open(file_path_to_save, 'a', newline='', encoding='utf-8') as csvfile:
                 # Specify the field names
                 fieldnames = ['name', 'username', 'total_posts', "total_engagement"]
 
