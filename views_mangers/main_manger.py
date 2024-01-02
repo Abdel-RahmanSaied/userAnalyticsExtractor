@@ -125,7 +125,7 @@ class ApiWorker(QtCore.QRunnable):
     def xlsx_writer(self, userslists, file_path):
         count = 1
         file_name = os.path.splitext(os.path.basename(self.src_path))[0]
-        file_path_to_save = os.path.join(file_path, f"{file_name}_result.xlsx")
+        file_path_to_save = os.path.join(file_path, f" نتائج {file_name}.xlsx")
 
         while os.path.exists(file_path_to_save):
             file_path_to_save = os.path.join(file_path, f"{file_name}_result" + str(count) + ".xlsx")
