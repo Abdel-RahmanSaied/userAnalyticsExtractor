@@ -26,7 +26,7 @@ class ApiWorkerSignals(QtCore.QObject):
 
 
 class ApiWorker(QtCore.QRunnable):
-    def __init__(self, base_url, src_path, exp_path):
+    def __init__(self, base_url, src_path, exp_path, token):
         super(ApiWorker, self).__init__()
         self.base_url = base_url
         self.src_path = src_path
@@ -34,7 +34,7 @@ class ApiWorker(QtCore.QRunnable):
         self.users_data_list = []
         self.params = {"tweet.fields": "public_metrics,referenced_tweets",
                        "start_time": "2023-01-01T00:00:00Z", "end_time": "2024-01-01T00:00:00Z", "max_results": "100"}
-        self.headers = {"Authorization": "Token b6d39cc1c56cf18b1a96c2128f0c50c54aa2b0d5e32806f3bd518ac143dfca74"}
+        self.headers = {"Authorization": f"Token {token}"}
         self.signals = ApiWorkerSignals()
 
     def run(self):
@@ -78,8 +78,6 @@ class ApiWorker(QtCore.QRunnable):
                 self.signals.current_user.emit(f"{user_name} is done")
                 count += 1
 
-            print(count)
-            print(len(users_list))
             if count == len(users_list):
                 return True
             return False
@@ -154,41 +152,6 @@ class ApiWorker(QtCore.QRunnable):
             print(e)
             return False
 
-    # def csv_writer(self, userslists, file_path):
-    #     # Open the CSV file in append mode ('a' or 'ab' for binary mode)
-    #     count = 1
-    #     file_name = self.src_path.split("/")[-1].split(".")[0]
-    #     file_path_to_save = os.path.join(file_path, f"{file_name}.csv")
-    #     if os.path.exists(file_path_to_save):
-    #         file_path_to_save = os.path.join(file_path, f"{file_name}" + str(count) + ".csv")
-    #
-    #     while os.path.exists(file_path_to_save):
-    #         file_path_to_save = os.path.join(file_path, f"{file_name}" + str(count) + ".csv")
-    #         count += 1
-    #
-    #     try:
-    #         with open(file_path_to_save, 'a', newline='', encoding='utf-8') as csvfile:
-    #             # Specify the field names
-    #             fieldnames = ['name', 'username', 'total_posts', "total_engagement"]
-    #
-    #             # Create a CSV DictWriter object
-    #             csv_writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    #
-    #             # If the file is empty, write the header first
-    #             if csvfile.tell() == 0:
-    #                 csv_writer.writeheader()
-    #
-    #             # Write the new row to the CSV file
-    #             for user_data_row in userslists:
-    #                 print(user_data_row)
-    #                 csv_writer.writerow(user_data_row)
-    #                 print("Row added successfully.")
-    #         print("successfully in csv")
-    #         return True
-    #     except Exception as e:
-    #         print(e)
-    #         return False
-
 
 class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
     # checkAcceptedSignal = QtCore.pyqtSignal()
@@ -215,9 +178,10 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
         self.tableWidget.setHorizontalHeaderLabels(table_headers)
 
         self.loading = None
+        self.token = None
 
     def run(self):
-        worker = ApiWorker(self.base_url, self.src_file_path, self.exp_path)
+        worker = ApiWorker(self.base_url, self.src_file_path, self.exp_path, self.token)
         worker.setAutoDelete(True)
         self.loading = WaitingScreen()
 

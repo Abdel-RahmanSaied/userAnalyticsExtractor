@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QMessageBox
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
+import requests
+
 
 class User_Analyser(QtWidgets.QStackedWidget):
     def __init__(self):
@@ -32,6 +34,14 @@ class User_Analyser(QtWidgets.QStackedWidget):
         # # install signals
         # main screen
         # self.main_manager.dwnlod_playlist_btn.clicked.connect(lambda: self.setCurrentIndex(1))
+
+    def handle_login(self):
+        data = {"username": "searchUser",
+                "password": "searchUser123"}
+        response = requests.post("https://api.twiscope.net/api/auth/login", data=data)
+        if response.status_code == 200:
+            print("Login successful")
+            self.main_manager.token = response.json().get("token")
 
     def check_internet_connection(self):
         manager = QNetworkAccessManager(self)
