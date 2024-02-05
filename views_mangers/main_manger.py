@@ -184,7 +184,6 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
         self.token = "c584940c3f0b147b68b49e4ee4e571ca7611735f862cce847d1f491171c338ea"
         self.first_name = None
 
-
     def run(self):
         worker = ApiWorker(self.base_url, self.src_file_path, self.exp_path, self.token)
         worker.setAutoDelete(True)
@@ -224,7 +223,8 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
     def update_current_user_lbl(self, username):
         # self.current_user_lbl.setText(f"Working On <h1>{username}</h1>")
         self.current_user_lbl.setVisible(True)
-        self.current_user_lbl.setText(f'<html><head/><body><p><span style=" font-size:18pt;">Working on </span><span style=" font-size:18pt; font-weight:600; color:#0f80ff;">{username}</span></p></body></html>')
+        self.current_user_lbl.setText(
+            f'<html><head/><body><p><span style=" font-size:18pt;">Working on </span><span style=" font-size:18pt; font-weight:600; color:#0f80ff;">{username}</span></p></body></html>')
 
     def updateTable(self, name, username, state):
         self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
