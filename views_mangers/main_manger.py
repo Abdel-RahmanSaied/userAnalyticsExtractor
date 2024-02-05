@@ -21,6 +21,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class ApiWorkerSignals(QtCore.QObject):
     current_user = QtCore.pyqtSignal(str)
+    finished_user = QtCore.pyqtSignal(str, str, str)
     msg_exec = QtCore.pyqtSignal(str, str)
     finished = QtCore.pyqtSignal()
 
@@ -63,6 +64,7 @@ class ApiWorker(QtCore.QRunnable):
         count = 0
         try:
             for user_name in users_list:
+                self.signals.current_user.emit(user_name)
                 response = self.handle_user_data_jsonRequest(user_name)
                 userJsonData, _ = self.check_response_status(response)
                 if not _:
@@ -70,12 +72,14 @@ class ApiWorker(QtCore.QRunnable):
                     self.signals.msg_exec.emit("Error",
                                                f"Error in {user_name} : {userJsonData.get('errors').get('errors')}")
                     return False
+
                 user_data = self.get_user_data(userJsonData)
                 if not user_data:
                     return False
                     # return False
                 self.users_data_list.append(user_data)
-                self.signals.current_user.emit(f"{user_name} is done")
+                # self.signals.current_user.emit(f"Current User: {user_name}", "Running...")
+                self.signals.finished_user.emit(user_data.get("name"), user_name, "Finished")
                 count += 1
 
             if count == len(users_list):
@@ -171,14 +175,15 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
         self.exp_path = None
 
         self.msg = QtWidgets.QMessageBox()
-        # self.msg.setStyleSheet("min-width: 50cm; ")
 
-        self.tableWidget.setRowCount(0)
-        table_headers = ['Name', 'Username', 'Status']
-        self.tableWidget.setHorizontalHeaderLabels(table_headers)
+        self.startTable()
+        self.current_user_lbl.setVisible(False)
 
         self.loading = None
-        self.token = None
+        # self.token = None
+        self.token = "c584940c3f0b147b68b49e4ee4e571ca7611735f862cce847d1f491171c338ea"
+        self.first_name = None
+
 
     def run(self):
         worker = ApiWorker(self.base_url, self.src_file_path, self.exp_path, self.token)
@@ -195,6 +200,7 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
         self.loading.show()
 
         worker.signals.current_user.connect(self.update_current_user_lbl)
+        worker.signals.finished_user.connect(self.updateTable)
         worker.signals.msg_exec.connect(self.msg_box)
         worker.signals.finished.connect(self.finished)
         self.threadpool.start(worker)
@@ -216,7 +222,22 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
         self.msg.exec_()
 
     def update_current_user_lbl(self, username):
-        self.current_user_lbl.setText(username)
+        # self.current_user_lbl.setText(f"Working On <h1>{username}</h1>")
+        self.current_user_lbl.setVisible(True)
+        self.current_user_lbl.setText(f'<html><head/><body><p><span style=" font-size:18pt;">Working on </span><span style=" font-size:18pt; font-weight:600; color:#0f80ff;">{username}</span></p></body></html>')
+
+    def updateTable(self, name, username, state):
+        self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
+        self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 0, QTableWidgetItem(name))
+        self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 1, QTableWidgetItem(username))
+        self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 2, QTableWidgetItem(state))
+
+    def startTable(self):
+        self.tableWidget.setColumnCount(3)  # Set the number of columns explicitly
+        self.tableWidget.setHorizontalHeaderLabels(['Name', 'Username', 'Status'])
+        self.tableWidget.horizontalHeader().setVisible(True)  # Ensure headers are visible
+        # Set resize mode to stretch so that headers fit the available space
+        self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
 
     def select_src_path(self, event):
         self.src_file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Single File', '',
@@ -237,10 +258,10 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
 
 
 if __name__ == "__main__":
-    # import qdarkstyle
+    import qdarkstyle
 
     app = QtWidgets.QApplication([])
     w = MainManager()
     w.show()
-    # app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
     app.exec_()

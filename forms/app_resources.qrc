@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>icons/twiscope-logo.png</file>
     <file>icons/touchscreen.png</file>
     <file>icons/birdt.ico</file>
   </qresource>

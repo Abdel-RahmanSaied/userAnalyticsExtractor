@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QMessageBox
 from views_mangers.main_manger import MainManager
+from views_mangers.login_manger import LoginManager
 
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QMessageBox
@@ -22,26 +23,28 @@ class User_Analyser(QtWidgets.QStackedWidget):
         self.setWindowTitle(_translate("Form", "User Analyzer "))
 
         self.main_manager = MainManager()
+        self.login_manager = LoginManager()
 
         self.check_internet_connection()
+        # self.handle_login()
 
         # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 
         # add widgets to the stack
 
-        self.addWidget(self.main_manager)  # 0
+        self.addWidget(self.login_manager)  # 0
+        self.addWidget(self.main_manager)  # 1
 
-        # # install signals
+        # install signals
+        self.login_manager.loginAcceptedSignal.connect(self.handle_login)
+
         # main screen
         # self.main_manager.dwnlod_playlist_btn.clicked.connect(lambda: self.setCurrentIndex(1))
 
-    def handle_login(self):
-        data = {"username": "searchUser",
-                "password": "searchUser123"}
-        response = requests.post("https://api.twiscope.net/api/auth/login", data=data)
-        if response.status_code == 200:
-            print("Login successful")
-            self.main_manager.token = response.json().get("token")
+    def handle_login(self, token, first_name):
+        self.main_manager.token = token
+        self.main_manager.first_name = first_name
+        self.setCurrentIndex(1)
 
     def check_internet_connection(self):
         manager = QNetworkAccessManager(self)
@@ -53,6 +56,15 @@ class User_Analyser(QtWidgets.QStackedWidget):
 
         manager.finished.connect(handle_reply)
         manager.get(request)
+
+    def show_login_failed_message(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText("Login Failed Please Contact Abdel-Rahman.")
+        msg.setWindowTitle("Connection Error")
+        msg.setStandardButtons(QMessageBox.Retry | QMessageBox.Close)
+        msg.buttonClicked.connect(self.handle_message_box_button)
+        msg.exec_()
 
     def show_no_internet_message(self):
         msg = QMessageBox()
@@ -67,7 +79,8 @@ class User_Analyser(QtWidgets.QStackedWidget):
         if button.text() == "Retry":
             self.check_internet_connection()
         elif button.text() == "Close":
-            self.close()
+            sys.exit()
+            # self.close()
 
 
 if __name__ == "__main__":
