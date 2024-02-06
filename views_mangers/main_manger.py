@@ -52,8 +52,7 @@ class ApiWorker(QtCore.QRunnable):
         running_state = self.automate_running(users_list)
         if not running_state:
             self.signals.msg_exec.emit("Success", "Not All users has been finished yet \n Please edit the original "
-                                                  "file to keep the users not finished yet \n and run again after 15 "
-                                                  "minutes")
+                                                  "file to keep the users not finished yet")
         else:
             self.signals.msg_exec.emit("Success", "Successfully Done")
 
@@ -67,19 +66,26 @@ class ApiWorker(QtCore.QRunnable):
                 self.signals.current_user.emit(user_name)
                 response = self.handle_user_data_jsonRequest(user_name)
                 userJsonData, _ = self.check_response_status(response)
+                state = "Finished"
                 if not _:
                     print(userJsonData)
-                    self.signals.msg_exec.emit("Error",
-                                               f"Error in {user_name} : {userJsonData.get('errors').get('errors')}")
-                    return False
+                    print("Error",f"Error in {user_name} : {userJsonData.get('errors').get('errors')}")
+                    print("xxxxxxxx"*100)
+                    state = userJsonData.get('errors').get('errors')
+                    user_data = self.get_user_failed_data(userJsonData, state)
 
-                user_data = self.get_user_data(userJsonData)
+                else:
+                    user_data = self.get_user_data(userJsonData, state)
+
+                    # return False
+
+                # user_data = self.get_user_data(userJsonData)
                 if not user_data:
                     return False
                     # return False
                 self.users_data_list.append(user_data)
                 # self.signals.current_user.emit(f"Current User: {user_name}", "Running...")
-                self.signals.finished_user.emit(user_data.get("name"), user_name, "Finished")
+                self.signals.finished_user.emit(user_data.get("name"), user_name, state)
                 count += 1
 
             if count == len(users_list):
@@ -114,14 +120,26 @@ class ApiWorker(QtCore.QRunnable):
             return response.json(), False
         return response.json(), True
 
-    def get_user_data(self, userJsonData):
+    def get_user_failed_data(self, userJsonData, state="Failed"):
+        # print(userJsonData)
+        user_full_data = userJsonData.get("errors").get("user_data")
+        print(user_full_data)
+        name = user_full_data.get("data").get("name")
+        username = user_full_data.get("data").get("username")
+        total_posts = 0
+        total_engagement = 0
+        user_data = {"name": name, "username": username, "total_posts": total_posts,
+                     "total_engagement": total_engagement, "state": state}
+        return user_data
+
+    def get_user_data(self, userJsonData, state="Finished"):
         data = userJsonData.get("data")
         name = data.get("user_data").get("name")
         username = data.get("user_data").get("username")
         total_posts = data.get("public_metrics").get("total_results")
         total_engagement = data.get("public_metrics").get("total_engagement")
         user_data = {"name": name, "username": username, "total_posts": total_posts,
-                     "total_engagement": total_engagement}
+                     "total_engagement": total_engagement, "state": state}
         return user_data
 
     def xlsx_writer(self, userslists, file_path):
@@ -139,7 +157,7 @@ class ApiWorker(QtCore.QRunnable):
             worksheet = workbook.active
 
             # Specify the column headers
-            fieldnames = ['name', 'username', 'total_posts', 'total_engagement']
+            fieldnames = ['name', 'username', 'total_posts', 'total_engagement', 'state']
             worksheet.append(fieldnames)
 
             # Write the data to the Excel file
@@ -179,7 +197,7 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
         self.startTable()
         self.current_user_lbl.setVisible(False)
 
-        self.loading = None
+        # self.loading = WaitingScreen()
         # self.token = None
         self.token = "c584940c3f0b147b68b49e4ee4e571ca7611735f862cce847d1f491171c338ea"
         self.first_name = None
@@ -224,7 +242,8 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
         # self.current_user_lbl.setText(f"Working On <h1>{username}</h1>")
         self.current_user_lbl.setVisible(True)
         self.current_user_lbl.setText(
-            f'<html><head/><body><p><span style=" font-size:18pt;">Working on </span><span style=" font-size:18pt; font-weight:600; color:#0f80ff;">{username}</span></p></body></html>')
+            f'<html><head/><body><p><span style=" font-size:18pt;">Working on </span><span style=" font-size:18pt; '
+            f'font-weight:600; color:#0f80ff;">{username}</span></p></body></html>')
 
     def updateTable(self, name, username, state):
         self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)

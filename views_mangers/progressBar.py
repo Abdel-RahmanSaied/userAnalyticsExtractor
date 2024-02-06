@@ -41,3 +41,10 @@ class WaitingScreen(QtWidgets.QProgressDialog):
         screen_rect = desktop.screenGeometry(self)
         center_point = screen_rect.center()
         self.move(center_point.x() - self.width() // 2, center_point.y() - self.height() // 2)
+
+    def show(self):
+        self.centerOnScreen()
+        super(WaitingScreen, self).show()
+
+    def close(self):
+        super(WaitingScreen, self).close()
