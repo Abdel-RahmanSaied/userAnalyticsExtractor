@@ -113,7 +113,7 @@ class ApiWorker(QtCore.QRunnable):
         return users_list
 
     def handle_category(self, df):
-        category = df.iloc[:, 3].tolist()
+        category = df.iloc[:, 5].tolist()
         if not category:
             return None
         return category
