@@ -21,7 +21,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class ApiWorkerSignals(QtCore.QObject):
     current_user = QtCore.pyqtSignal(str)
-    finished_user = QtCore.pyqtSignal(str, str, str)
+    finished_user = QtCore.pyqtSignal(str, str, str, str)
     msg_exec = QtCore.pyqtSignal(str, str)
     finished = QtCore.pyqtSignal()
 
@@ -38,6 +38,8 @@ class ApiWorker(QtCore.QRunnable):
         self.headers = {"Authorization": f"Token {token}"}
         self.signals = ApiWorkerSignals()
 
+        self.category = None
+
     def run(self):
         df = self.handle_df()
         if df is None:
@@ -45,6 +47,7 @@ class ApiWorker(QtCore.QRunnable):
             return False
 
         users_list = self.handle_users_list(df)
+        self.category = self.handle_category(df)
         if not users_list:
             self.signals.msg_exec.emit("Error", "No users found")
             return False
@@ -62,20 +65,22 @@ class ApiWorker(QtCore.QRunnable):
     def automate_running(self, users_list):
         count = 0
         try:
-            for user_name in users_list:
+            for index in range(len(users_list)):
+                user_name = users_list[index]
+                category = self.category[index]
                 self.signals.current_user.emit(user_name)
                 response = self.handle_user_data_jsonRequest(user_name)
                 userJsonData, _ = self.check_response_status(response)
                 state = "Finished"
                 if not _:
                     print(userJsonData)
-                    print("Error",f"Error in {user_name} : {userJsonData.get('errors').get('errors')}")
-                    print("xxxxxxxx"*100)
+                    print("Error", f"Error in {user_name} : {userJsonData.get('errors').get('errors')}")
+                    print("xxxxxxxx" * 100)
                     state = userJsonData.get('errors').get('errors')
-                    user_data = self.get_user_failed_data(userJsonData, state)
+                    user_data = self.get_user_failed_data(userJsonData, state, category)
 
                 else:
-                    user_data = self.get_user_data(userJsonData, state)
+                    user_data = self.get_user_data(userJsonData, state, category)
 
                     # return False
 
@@ -85,7 +90,7 @@ class ApiWorker(QtCore.QRunnable):
                     # return False
                 self.users_data_list.append(user_data)
                 # self.signals.current_user.emit(f"Current User: {user_name}", "Running...")
-                self.signals.finished_user.emit(user_data.get("name"), user_name, state)
+                self.signals.finished_user.emit(user_data.get("name"), user_name, category, state)
                 count += 1
 
             if count == len(users_list):
@@ -107,6 +112,12 @@ class ApiWorker(QtCore.QRunnable):
             return None
         return users_list
 
+    def handle_category(self, df):
+        category = df.iloc[:, 3].tolist()
+        if not category:
+            return None
+        return category
+
     def handle_user_data_jsonRequest(self, user_name):
         params = self.params
         if not user_name:
@@ -120,7 +131,7 @@ class ApiWorker(QtCore.QRunnable):
             return response.json(), False
         return response.json(), True
 
-    def get_user_failed_data(self, userJsonData, state="Failed"):
+    def get_user_failed_data(self, userJsonData, state="Failed", category=""):
         # print(userJsonData)
         user_full_data = userJsonData.get("errors").get("user_data")
         print(user_full_data)
@@ -129,17 +140,17 @@ class ApiWorker(QtCore.QRunnable):
         total_posts = 0
         total_engagement = 0
         user_data = {"name": name, "username": username, "total_posts": total_posts,
-                     "total_engagement": total_engagement, "state": state}
+                     "total_engagement": total_engagement, "state": state, "Category": category}
         return user_data
 
-    def get_user_data(self, userJsonData, state="Finished"):
+    def get_user_data(self, userJsonData, state="Finished", category=""):
         data = userJsonData.get("data")
         name = data.get("user_data").get("name")
         username = data.get("user_data").get("username")
         total_posts = data.get("public_metrics").get("total_results")
         total_engagement = data.get("public_metrics").get("total_engagement")
         user_data = {"name": name, "username": username, "total_posts": total_posts,
-                     "total_engagement": total_engagement, "state": state}
+                     "total_engagement": total_engagement, "state": state, "Category": category}
         return user_data
 
     def xlsx_writer(self, userslists, file_path):
@@ -157,7 +168,7 @@ class ApiWorker(QtCore.QRunnable):
             worksheet = workbook.active
 
             # Specify the column headers
-            fieldnames = ['name', 'username', 'total_posts', 'total_engagement', 'state']
+            fieldnames = ['name', 'username', 'total_posts', 'total_engagement', 'Category', 'state']
             worksheet.append(fieldnames)
 
             # Write the data to the Excel file
@@ -245,15 +256,16 @@ class MainManager(QtWidgets.QWidget, main_view.Ui_Form):
             f'<html><head/><body><p><span style=" font-size:18pt;">Working on </span><span style=" font-size:18pt; '
             f'font-weight:600; color:#0f80ff;">{username}</span></p></body></html>')
 
-    def updateTable(self, name, username, state):
+    def updateTable(self, name, username, category, state):
         self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
         self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 0, QTableWidgetItem(name))
         self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 1, QTableWidgetItem(username))
-        self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 2, QTableWidgetItem(state))
+        self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 2, QTableWidgetItem(category))
+        self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 3, QTableWidgetItem(state))
 
     def startTable(self):
-        self.tableWidget.setColumnCount(3)  # Set the number of columns explicitly
-        self.tableWidget.setHorizontalHeaderLabels(['Name', 'Username', 'Status'])
+        self.tableWidget.setColumnCount(4)  # Set the number of columns explicitly
+        self.tableWidget.setHorizontalHeaderLabels(['Name', 'Username', 'Category', 'Status'])
         self.tableWidget.horizontalHeader().setVisible(True)  # Ensure headers are visible
         # Set resize mode to stretch so that headers fit the available space
         self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
